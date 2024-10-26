@@ -2,7 +2,7 @@
 
 ## Example Usage
 
-An example usage file is available in this repository. You can view it [here](https://github.com/SZ-yang/Lineage-aware_CL/blob/main/example_usage.ipynb).
+An example usage file of how to LCL model is available in this repository. You can view it [here](https://github.com/SZ-yang/Lineage-aware_CL/blob/main/example_usage.ipynb).
 
 
 ## File Organization
