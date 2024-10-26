@@ -19,6 +19,9 @@ An example usage file of how to LCL model is available in this repository. You c
         - (Biddy, Weinreb, Weinreb_top200 , Weinreb_top500)
     - train_test_unseen_lineage
         - (Biddy, Weinreb, Weinreb_top200 , Weinreb_top500)
+    - gemli/Weinreb
+    - gesa
+    - som
 
   - supUMAP
     - full_data
