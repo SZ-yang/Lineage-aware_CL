@@ -1,15 +1,62 @@
 rm(list=ls())
 
+library(Seurat)
+library(Matrix)
+library(variancePartition)
+library(lme4)
+library(reformulas)
 library(ggplot2)
 library(dplyr)
 library(tidyr)
 library(tibble)
 library(scales)
 
-load("~/kzlinlab/projects/scContrastiveLearn/out/kevin/Writeup10c/Writeup10c_celltag_variancePartition.RData")
+load("/Users/kevinlin/Library/CloudStorage/Dropbox/Collaboration-and-People/Joshua/out/kevin/Writeup12_joshua-celltagmulti/cell_tag_integration.RData")
+seurat_obj <- subset(integrated, batch == "tag")
 
-## Stacked barplot of variance explained (top 50 genes)
-## Assumes anova_mat is a gene x covariate numeric matrix/data.frame with rownames = genes
+head(seurat_obj@meta.data)
+
+keep_vec <- !is.na(seurat_obj$CellTagD0_85k)
+seurat_obj$keep <- keep_vec
+seurat_obj <- subset(seurat_obj, keep == TRUE)
+
+tab_vec <- table(seurat_obj$CellTagD0_85k)
+lineage_names <- names(tab_vec)[which(tab_vec >= 50)]
+keep_vec <- seurat_obj$CellTagD0_85k %in% lineage_names
+seurat_obj$keep <- keep_vec
+seurat_obj <- subset(seurat_obj, keep == TRUE)
+
+seurat_obj$CellTagD0_85k <- factor(paste0("Lineage:", seurat_obj$CellTagD0_85k))
+seurat_obj$reprogramming_day <- factor(paste0("Day:", seurat_obj$reprogramming_day))
+
+#############################
+
+# fit
+var_data <- SeuratObject::LayerData(seurat_obj,
+                                    layer = "scale.data",
+                                    assay = "integrated")
+var_info <- seurat_obj@meta.data
+form <- ~ (1 | cell_type) + (1 | CellTagD0_85k)  + (1 | reprogramming_day)
+old_warn <- getOption("warn")
+options(warn = 0)
+on.exit(options(warn = old_warn), add = TRUE)
+
+varPart <- suppressWarnings(
+  variancePartition::fitExtractVarPartModel(var_data, form, var_info, showWarnings = FALSE)
+)
+
+save(varPart,
+     file = "/Users/kevinlin/Library/CloudStorage/Dropbox/Collaboration-and-People/Joshua/out/kevin/Writeup10c/Writeup10c_celltag_variancePartition_local.RData")
+
+variance_explained <- Matrix::rowSums(varPart[,c("CellTagD0_85k", "cell_type", "reprogramming_day")])
+varPart <- varPart[order(variance_explained, decreasing = TRUE),]
+head(varPart[1:50,])
+
+round(varPart[1:50,1:3],2)
+
+print("Done! :)")
+
+############################
 
 # 1) Pick top 50 genes by total explained variation
 top_n <- 40
@@ -70,10 +117,13 @@ plot1 <- ggplot(plot_df, aes(x = gene, y = var_explained, fill = covariate)) +
     axis.ticks.x = element_blank()
   )
 
-fig_folder <- "~/kzlinlab/projects/scContrastiveLearn/git/SCSeq_LineageBarcoding_kevin/fig/kevin/Writeup10c/"
+
+fig_folder <- "/Users/kevinlin/Library/CloudStorage/Dropbox/Collaboration-and-People/Joshua/git/SCSeq_LineageBarcoding/fig/kevin/Writeup10c/"
 
 ggplot2::ggsave(plot1,
-                filename = paste0(fig_folder, "Writeup10c_celltag_variancePartition.png"),
+                filename = paste0(fig_folder, "Writeup10c_celltag_variancePartition_local.png"),
                 width = 6, height = 6)
+
+
 
 
